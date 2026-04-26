@@ -1,10 +1,11 @@
-from flask import Flask, jsonify
+from flask import Flask, Response
 import psycopg2
 import os
+import json
 
 app = Flask(__name__)
 
-# الاتصال بالداتابيز (Neon)
+# الاتصال بالداتابيز
 conn = psycopg2.connect(
     os.environ.get("DATABASE_URL"),
     sslmode="require"
@@ -26,4 +27,8 @@ def users():
     for row in rows:
         result.append(dict(zip(columns, row)))
 
-    return jsonify(result)
+    # 👇 أهم سطر (عشان العربي)
+    return Response(
+        json.dumps(result, ensure_ascii=False),
+        content_type="application/json; charset=utf-8"
+    )
