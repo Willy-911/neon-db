@@ -4,7 +4,11 @@ import os
 
 app = Flask(__name__)
 
-conn = psycopg2.connect(os.environ.get("DATABASE_URL"))
+# الاتصال بالداتابيز (Neon)
+conn = psycopg2.connect(
+    os.environ.get("DATABASE_URL"),
+    sslmode="require"
+)
 
 @app.route("/")
 def home():
@@ -14,5 +18,12 @@ def home():
 def users():
     cur = conn.cursor()
     cur.execute("SELECT * FROM users;")
-    data = cur.fetchall()
-    return jsonify(data)
+
+    columns = [desc[0] for desc in cur.description]
+    rows = cur.fetchall()
+
+    result = []
+    for row in rows:
+        result.append(dict(zip(columns, row)))
+
+    return jsonify(result)
