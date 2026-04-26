@@ -5,7 +5,6 @@ import json
 
 app = Flask(__name__)
 
-# الاتصال بالداتابيز
 conn = psycopg2.connect(
     os.environ.get("DATABASE_URL"),
     sslmode="require"
@@ -27,8 +26,7 @@ def users():
     for row in rows:
         result.append(dict(zip(columns, row)))
 
-    # 👇 أهم سطر (عشان العربي)
     return Response(
-        json.dumps(result, ensure_ascii=False),
+        json.dumps(result, ensure_ascii=False, default=str),
         content_type="application/json; charset=utf-8"
     )
