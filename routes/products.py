@@ -54,16 +54,21 @@ def add_product():
     cur = conn.cursor()
 
     cur.execute("""
-        INSERT INTO products (name, price, location, category, image)
-        VALUES (%s, %s, %s, %s, %s)
-        RETURNING *;
-    """, (
-        data.get("name"),
-        data.get("price"),
-        data.get("location"),
-        data.get("category"),
-        data.get("image")
-    ))
+    INSERT INTO products 
+    (title_ar, category, price, location_ar, description_ar, main_image, extra_images, is_sold, owner_uid)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+    RETURNING *;
+""", (
+    data.get("title_ar"),
+    data.get("category"),
+    data.get("price"),
+    data.get("location_ar"),
+    data.get("description_ar"),
+    data.get("main_image"),
+    data.get("extra_images"),
+    data.get("is_sold"),
+    data.get("owner_uid")
+))
 
     new_product = cur.fetchone()
     conn.commit()
