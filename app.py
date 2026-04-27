@@ -14,6 +14,18 @@ conn = psycopg2.connect(
 def home():
     return "API is running"
 
+@app.route("/tables")
+def tables():
+    cur = conn.cursor()
+    cur.execute("""
+    SELECT table_name 
+    FROM information_schema.tables 
+    WHERE table_schema = 'public';
+    """)
+    
+    tables = cur.fetchall()
+    return str(tables)
+
 @app.route("/users")
 def users():
     cur = conn.cursor()
