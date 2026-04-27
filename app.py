@@ -1,44 +1,17 @@
-from flask import Flask, Response
-import psycopg2
-import os
-import json
+from flask import Flask
+from routes.products import products_bp
+from routes.users import users_bp
+from routes.cart import cart_bp
+from routes.favorites import favorites_bp
 
 app = Flask(__name__)
-
-conn = psycopg2.connect(
-    os.environ.get("DATABASE_URL"),
-    sslmode="require"
-)
 
 @app.route("/")
 def home():
     return "API is running"
 
-@app.route("/tables")
-def tables():
-    cur = conn.cursor()
-    cur.execute("""
-    SELECT table_name 
-    FROM information_schema.tables 
-    WHERE table_schema = 'public';
-    """)
-    
-    tables = cur.fetchall()
-    return str(tables)
-
-@app.route("/users")
-def users():
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM users;")
-
-    columns = [desc[0] for desc in cur.description]
-    rows = cur.fetchall()
-
-    result = []
-    for row in rows:
-        result.append(dict(zip(columns, row)))
-
-    return Response(
-        json.dumps(result, ensure_ascii=False, default=str),
-        content_type="application/json; charset=utf-8"
-    )
+# تسجيل كل الـ routes
+app.register_blueprint(products_bp)
+app.register_blueprint(users_bp)
+app.register_blueprint(cart_bp)
+app.register_blueprint(favorites_bp)
