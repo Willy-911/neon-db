@@ -7,59 +7,82 @@ favorites_bp = Blueprint('favorites', __name__)
 # ✅ Get Favorites
 @favorites_bp.route("/favorites/<user_id>", methods=["GET"])
 def get_favorites(user_id):
-    conn = get_connection()
-    cur = conn.cursor()
+    conn = None
+    cur = None
 
-    cur.execute("""
-        SELECT f.id, f.product_id, p.title_ar, p.price, p.main_image
-        FROM favorites f
-        JOIN products p ON f.product_id = p.id
-        WHERE f.user_id = %s;
-    """, (user_id,))
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
 
-    columns = [desc[0] for desc in cur.description]
-    rows = cur.fetchall()
+        cur.execute("""
+            SELECT f.id, f.product_id, p.title_ar, p.price, p.main_image
+            FROM favorites f
+            JOIN products p ON f.product_id = p.id
+            WHERE f.user_id = %s;
+        """, (user_id,))
 
-    result = [dict(zip(columns, row)) for row in rows]
+        columns = [desc[0] for desc in cur.description]
+        rows = cur.fetchall()
 
-    cur.close()
-    conn.close()
+        result = [dict(zip(columns, row)) for row in rows]
 
-    return Response(json.dumps(result, ensure_ascii=False), content_type="application/json")
+        return Response(
+            json.dumps(result, ensure_ascii=False, default=str),
+            content_type="application/json; charset=utf-8",
+        )
+    except Exception as e:
+        return {"error": str(e)}, 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
 
 
 # ✅ Toggle Favorite
 @favorites_bp.route("/favorites", methods=["POST"])
 def toggle_favorite():
     data = request.json
+    if not data or "user_id" not in data or "product_id" not in data:
+        return {"error": "user_id and product_id are required"}, 400
 
-    conn = get_connection()
-    cur = conn.cursor()
+    conn = None
+    cur = None
 
-    # check لو موجود
-    cur.execute("""
-        SELECT * FROM favorites
-        WHERE user_id=%s AND product_id=%s;
-    """, (data["user_id"], data["product_id"]))
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
 
-    exists = cur.fetchone()
-
-    if exists:
+        # check لو موجود
         cur.execute("""
-            DELETE FROM favorites
+            SELECT * FROM favorites
             WHERE user_id=%s AND product_id=%s;
         """, (data["user_id"], data["product_id"]))
-        message = "Removed from favorites"
-    else:
-        cur.execute("""
-            INSERT INTO favorites (user_id, product_id)
-            VALUES (%s, %s);
-        """, (data["user_id"], data["product_id"]))
-        message = "Added to favorites"
 
-    conn.commit()
+        exists = cur.fetchone()
 
-    cur.close()
-    conn.close()
+        if exists:
+            cur.execute("""
+                DELETE FROM favorites
+                WHERE user_id=%s AND product_id=%s;
+            """, (data["user_id"], data["product_id"]))
+            message = "Removed from favorites"
+        else:
+            cur.execute("""
+                INSERT INTO favorites (user_id, product_id)
+                VALUES (%s, %s);
+            """, (data["user_id"], data["product_id"]))
+            message = "Added to favorites"
 
-    return {"message": message}
+        conn.commit()
+
+        return {"message": message}
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return {"error": str(e)}, 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
